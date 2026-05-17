@@ -58,3 +58,35 @@ The model may be imporved by incorporating additional spatial and socio-economic
 - Neighborhood or surrounding parcel characteristics
 
 Incorporating temporal and environmental variables may also improve the model's ability to capture more complex spatial relationships and increase its predictive performance.
+
+### Spatial Misclassification
+
+To identify which categories were predicted poorly, the following code was implemented:
+
+```bash
+error_agg = (
+    data.groupby("ASS_CLASSI")["correct_prediction"]
+    .value_counts()
+    .unstack(fill_value=0)
+)
+```
+
+The results are shown below:
+
+| ASS_CLASSI | False | True
+|:------------:|:-------:|:------:
+|A|108|1887
+|C|36|129
+|GP|0|1
+|I|5|10
+|R|73|27849
+|R4|1|2
+|S|5|10
+
+The results indicate that most misclassifications occurred in Agricultural (A) and Residential (R) parcels. Although Residential areas had a relatively high number of incorrect predictions, they also had a very large number of correctly classified parcels, suggesting that the model still performed well overall for this category. Agricultural parcels showed a comparatively higher proportion of errors relative to their total sample size.
+
+Spatially, these misclassifications may occur in transition or mixed-use areas where parcel characteristics overlap between categories. For example, agricultural parcels located near roads, commercial centers, or expanding urban areas may exhibit spatial characteristics similar to residential or commercial parcels. Likewise, residential parcels in peri-urban or rural areas may resemble agricultural parcels in terms of accessibility, size, and surrounding land use.
+
+The errors may also cluster spatially in areas experiencing rapid land conversion, urban expansion, or inconsistent land use patterns. Such areas often contain heterogeneous parcel characteristics that make classification more difficult for the model.
+
+These misclassifications suggest that additional explanatory variables—such as zoning, population density, land value, building density, or temporal land use change—may help improve the spatial interpretation and predictive performance of the model.
