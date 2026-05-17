@@ -1,4 +1,7 @@
 import geopandas as gpd
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier 
+from sklearn.metrics import accuracy_score 
 
 parcels = gpd.read_file("data/parcel.geojson")
 
@@ -64,8 +67,57 @@ parcels_landuse["landuse_code"] = (
 )
 
 # print unique land use categories and their codes 
-print( 
-    parcels_landuse[["Name", "landuse_code"]] 
-    .drop_duplicates() 
-    .sort_values("landuse_code") 
-) 
+# print( 
+#     parcels_landuse[["Name", "landuse_code"]] 
+#     .drop_duplicates() 
+#     .sort_values("landuse_code") 
+# ) 
+
+# Encode target variable (land use class)
+parcels_landuse["target_code"] = (
+    parcels_landuse["ASS_CLASSI"]
+    .astype("category")
+    .cat.codes
+)
+
+# Defining Feature Matrix
+features = [
+    "area",
+    "perimeter",
+    "compactness",
+    "dist_to_road",
+    "dist_to_water",
+    "dist_to_school",
+    "dist_to_tourism",
+    "landuse_code"
+]
+
+# Prepare dataset
+data = parcels_landuse.dropna(
+    subset = features + ["target_code"]
+)
+
+X = data[features]
+y = data["target_code"]
+
+X_train, X_test, y_train, y_test = train_test_split( 
+    X, 
+    y, 
+    test_size=0.30, 
+    random_state=42 
+)
+
+model = RandomForestClassifier(
+    n_estimators=100,
+    random_state=42
+)
+
+model.fit(X_train, y_train)
+
+# Generate predictions
+y_pred = model.predict(X_test)
+
+accuracy = accuracy_score(y_test, y_pred)
+
+print("Accuracy:", accuracy)
+
