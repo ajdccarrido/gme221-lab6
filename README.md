@@ -64,6 +64,7 @@ Yes. A model may achieve high numerical accuracy while still having poor spatial
 **10. What features may improve the model?**
 
 The model may be imporved by incorporating additional spatial and socio-economic variables such as:
+
 - Elevation and slope
 - Distance to Commercial Centers
 - Susceptibility to hazards (Flood, Landslide, Earthquake, etc.)
@@ -184,3 +185,61 @@ print(gb_accuracy)
 The resulting accuracy of the Gradient Boosting model was 94.77%, which is slightly lower than the 96.45% accuracy achieved by the improved Random Forest model. Compared to the initial Random Forest accuracy of 96.16% before adding the two new features, the updated Random Forest model showed a slight improvement in predictive performance.
 
 This suggests that the additional spatial features contributed useful information to the model, particularly in capturing accessibility and land use heterogeneity, although the improvement in accuracy was relatively modest.
+
+### Final Reflection Questions
+
+**11. How is GeoAI different from traditional GIS analysis?**
+
+GeoAI uses machine learning models to automatically identify patterns and relationships from spatial data, unlike traditional GIS analysis which often relies on manually defined rules and criteria. While traditional GIS analysis depends heavily on expert-defined thresholds and overlays, GeoAI can learn from existing data and generate predictions automatically. However, this also means that data preparation becomes very important. Since machine learning follows the principle of “garbage in, garbage out,” the datasets used must be accurate, consistent, and complete. In addition, GeoAI generally requires more technical knowledge in data science and modelling compared to traditional GIS analysis.
+
+**12. What spatial features most influenced the model?**
+
+I used the `feature_importances_` attribute of the trained models to identify which spatial features contributed the most to the prediction of the `ASS_CLASSI` variable.
+
+**Random Forest Model Feature Importance**
+| Feature            | Importance |
+| ------------------ | ---------: |
+| area               |   0.211343 |
+| perimeter          |   0.145816 |
+| dist_to_road       |   0.127974 |
+| dist_to_tourism    |   0.109048 |
+| dist_to_major_road |   0.099882 |
+| dist_to_water      |   0.094972 |
+| dist_to_school     |   0.086745 |
+| compactness        |   0.085901 |
+| landuse_code       |   0.025654 |
+| landuse_diversity  |   0.012666 |
+
+**Gradient Boosting Model Feature Importance**
+| Feature            | Importance |
+| ------------------ | ---------: |
+| area               |   0.479363 |
+| dist_to_road       |   0.120999 |
+| dist_to_tourism    |   0.097966 |
+| compactness        |   0.072073 |
+| dist_to_major_road |   0.070748 |
+| dist_to_school     |   0.050766 |
+| dist_to_water      |   0.045596 |
+| perimeter          |   0.045065 |
+| landuse_code       |   0.014007 |
+| landuse_diversity  |   0.003417 |
+
+Based on the results, both the Random Forest and Gradient Boosting models identified parcel `area` as the most influential feature in predicting the `ASS_CLASSI` variable, with importance scores of `21.13%` and `47.94%`, respectively. This suggests that parcel size plays a major role in determining parcel assessment classification.
+
+Accessibility-related variables, such as `dist_to_road`, `dist_to_major_road`, `dist_to_school`, and `dist_to_tourism`, also showed relatively high importance scores across both models. This indicates that proximity to transportation infrastructure, services, and economic activity significantly influences parcel classification patterns.
+
+In contrast, `landuse_code` and `landuse_diversity` had relatively low importance scores in both models. This may indicate that the existing geometric and accessibility-based features already captured much of the spatial variability required for prediction, reducing the contribution of the land use-related variables.
+
+The Gradient Boosting model placed substantially greater emphasis on parcel area compared to the Random Forest model, suggesting that Gradient Boosting relied more heavily on dominant predictive variables. Meanwhile, the Random Forest model distributed importance more evenly across multiple spatial features, which may explain its slightly higher classification accuracy.
+
+**13. What are the limitation of this model?**
+
+The model simplifies complex real-world spatial relationships and land use dynamics into measurable variables. It only considers the features included in the dataset and may not capture other important social, economic, political, or environmental factors affecting parcel classification. In addition, the model depends on the quality and completeness of the available data, which may affect prediction accuracy.
+
+**14. How can this support spatial decision-making?**
+
+GeoAI can support spatial decision-making by identifying patterns and predicting possible future conditions based on historical and existing spatial data. It helps planners and decision-makers understand areas that may experience change, development, or transition. This allows them to evaluate potential scenarios and make more informed planning and policy decisions before actual changes occur on the ground.
+
+**15. What ethical or planning concerns may arise from predictive parcel classification?**
+
+One concern is that predictive models may oversimplify complex spatial and social conditions by relying only on the variables included in the model. If the data used are incomplete, outdated, or biased, the predictions may also become biased or inaccurate. This can affect planning decisions, resource allocation, or land valuation. There is also a risk that decision-makers may rely too heavily on model outputs without considering local context, field validation, and community perspectives.

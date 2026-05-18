@@ -251,3 +251,33 @@ print("\nModel Comparison")
 print("----------------")
 print(f"Random Forest Accuracy: {rf_accuracy:.4f}")
 print(f"Gradient Boosting Accuracy: {gb_accuracy:.4f}")
+
+# Extract feature importance for RF model
+rf_importance_df = pd.DataFrame({
+    "feature": features,
+    "importance": rf_model.feature_importances_
+})
+
+# Sort descending
+rf_importance_df = rf_importance_df.sort_values(
+    by="importance",
+    ascending=False
+)
+
+print("Random Forest Model Feature Importance")
+print(rf_importance_df)
+
+# Extract feature importance for XGBoost model
+gb_importance_df = pd.DataFrame({
+    "feature": features,
+    "importance": gb_model.feature_importances_
+})
+
+# Sort descending
+gb_importance_df = gb_importance_df.sort_values(
+    by="importance",
+    ascending=False
+)
+
+print("Gradient Boost Model Feature Importance")
+print(gb_importance_df)
