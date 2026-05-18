@@ -1,8 +1,22 @@
 # Laboratory Exercise 6 - GeoAI: Spatial Prediction Using Parcel-Based Feature Engineering
 
-## Overview
+This laboratory extends the previous exercises from: 
+- descriptive GIS analysis 
+- overlay analysis 
+- spatial statistics 
+- raster-vector integration 
+
+into GeoAI-based spatial prediction.
+
+## How to Run
+
+1. Activate virtual environment
+2. Install requirements.txt
+3. Run `py server/analysis.py`
 
 ## Expected Outputs
+
+1. Parcel GeoAI Prediction GeoJSON
 
 ## Commit Milestones
 
@@ -90,3 +104,83 @@ Spatially, these misclassifications may occur in transition or mixed-use areas w
 The errors may also cluster spatially in areas experiencing rapid land conversion, urban expansion, or inconsistent land use patterns. Such areas often contain heterogeneous parcel characteristics that make classification more difficult for the model.
 
 These misclassifications suggest that additional explanatory variables—such as zoning, population density, land value, building density, or temporal land use change—may help improve the spatial interpretation and predictive performance of the model.
+
+### Challenge Exercise
+
+I selected road class proximity and land use diversity as the two additional spatial features to improve the model.
+
+For the road class proximity feature, I first examined the roads dataset and identified the following road classifications:
+
+- BARANGAY ROAD
+- CITY ROAD
+- EXPRESS WAY (PROPOSED)
+- NATIONAL ROAD
+- PRIVATE ROAD
+- Proposed Bypass Road
+- Provincial Road
+
+From these categories, I selected National Roads, Express Ways (Proposed), and Provincial Roads as the major road classes because they function as primary transportation corridors and typically experience higher traffic volumes. These roads are expected to have stronger influence on accessibility, urban development, and parcel valuation.
+
+The feature was implemented by calculating the distance of each parcel centroid to the nearest major road segment using the following code:
+
+```bash
+# Define major road classes
+major_road_classes = [
+    "NATIONAL ROAD",
+    "EXPRESS WAY (PROPOSED)",
+    "Provincial Road"
+]
+
+# Filter major roads
+major_roads = roads[
+    roads["R_CLASS"].isin(major_road_classes)
+].copy()
+
+# Distance to nearest major road
+parcels_landuse["dist_to_major_road"] = (
+    parcels_landuse["centroid"]
+    .apply(lambda p: major_roads.distance(p).min())
+)
+```
+
+For land use diversity, I utilized the existing spatial join result between parcels and land use polygons. Since the spatial join used the `intersects` predicate in a one-to-many relationship, a parcel could intersect multiple land use categories. This provided a basis for measuring the diversity of land uses associated with each parcel.
+
+The land use diversity feature was computed by counting the number of unique land use categories intersecting each parcel:
+
+```bash
+# Count unique land use categories per parcel
+landuse_diversity = (
+    parcels_landuse
+    .groupby(parcels_landuse.index)["Name"]
+    .nunique()
+)
+
+# Assign diversity score
+parcels_landuse["landuse_diversity"] = (
+    parcels_landuse.index.map(landuse_diversity)
+)
+```
+
+To further improve and compare the modelling approach, I also tested the Gradient Boosting Classifier. This algorithm is commonly used in spatial and land cover classification tasks because it incrementally improves prediction performance by combining multiple weak learners into a stronger predictive model.
+
+The model was implemented using the following code:
+
+```bash
+# Gradient Boosting
+gb_model = GradientBoostingClassifier(
+    random_state=42
+)
+
+gb_model.fit(X_train, y_train)
+
+gb_pred = gb_model.predict(X_test)
+
+gb_accuracy = accuracy_score(y_test, gb_pred)
+
+print("\nGradient Boosting Accuracy:")
+print(gb_accuracy)
+```
+
+The resulting accuracy of the Gradient Boosting model was 94.77%, which is slightly lower than the 96.45% accuracy achieved by the improved Random Forest model. Compared to the initial Random Forest accuracy of 96.16% before adding the two new features, the updated Random Forest model showed a slight improvement in predictive performance.
+
+This suggests that the additional spatial features contributed useful information to the model, particularly in capturing accessibility and land use heterogeneity, although the improvement in accuracy was relatively modest.

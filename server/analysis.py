@@ -1,7 +1,8 @@
+import pandas as pd
 import geopandas as gpd
 from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier 
-from sklearn.metrics import accuracy_score 
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.metrics import accuracy_score
 
 parcels = gpd.read_file("data/parcel.geojson")
 
@@ -20,7 +21,7 @@ landuse = landuse.to_crs(parcels.crs)
 schools = schools.to_crs(parcels.crs)
 tourism = tourism.to_crs(parcels.crs)
 
-# Geoemtry-Based Features
+# Geometry-Based Features
 parcels["area"] = parcels.geometry.area
 parcels["perimeter"] = parcels.geometry.length
 parcels["compactness"] = (
@@ -80,6 +81,112 @@ parcels_landuse["target_code"] = (
     .cat.codes
 )
 
+# # Prepare dataset
+# data = parcels_landuse.dropna(
+#     subset = features + ["target_code"]
+# )
+
+# X = data[features]
+# y = data["target_code"]
+
+# X_train, X_test, y_train, y_test = train_test_split( 
+#     X, 
+#     y, 
+#     test_size=0.30, 
+#     random_state=42 
+# )
+
+# model = RandomForestClassifier(
+#     n_estimators=100,
+#     random_state=42
+# )
+
+# model.fit(X_train, y_train)
+
+# # Generate predictions
+# y_pred = model.predict(X_test)
+
+# accuracy = accuracy_score(y_test, y_pred)
+
+# print("Accuracy:", accuracy)
+
+# data["predicted_class"] = model.predict(X)
+
+# categories = ( 
+#     data["ASS_CLASSI"] 
+#     .astype("category") 
+#     .cat.categories
+# ) 
+
+# data["predicted_label"] = data["predicted_class"].apply( 
+#     lambda code: categories[code] 
+# )
+
+# data["correct_prediction"] = (
+#     data["ASS_CLASSI"] ==
+#     data["predicted_label"]
+# )
+
+# print(data[["ASS_CLASSI", "predicted_label", "correct_prediction"]].head())
+
+# error_agg = (
+#     data.groupby("ASS_CLASSI")["correct_prediction"]
+#     .value_counts()
+#     .unstack(fill_value=0)
+# )
+
+# print(error_agg)
+
+# data = data.drop(
+#     columns=["centroid"],
+#     errors="ignore"
+# )
+
+# export to geojson 
+# data.to_file( 
+#     "output/parcel_geoai_prediction.geojson", 
+#     driver="GeoJSON" 
+#     ) 
+
+# print("GeoAI output exported.") 
+
+########################
+## Challenge Exercise ##
+########################
+
+# According to Road Type, R_CLASS field from roads gdf
+# Road Types - BARANGAY ROAD, CITY ROAD, EXPRESS WAY (PROPOSED), NATIONAL ROAD, PRIVATE ROAD, Proposed Bypass Road, Provincial Road
+# Define major road classes
+major_road_classes = [
+    "NATIONAL ROAD",
+    "EXPRESS WAY (PROPOSED)",
+    "Provincial Road"
+]
+
+# Filter major roads
+major_roads = roads[
+    roads["R_CLASS"].isin(major_road_classes)
+].copy()
+
+# Distance to nearest major road
+parcels_landuse["dist_to_major_road"] = (
+    parcels_landuse["centroid"]
+    .apply(lambda p: major_roads.distance(p).min())
+)
+
+# According to Land Use Diversity
+# Count unique land use categories per parcel
+landuse_diversity = (
+    parcels_landuse
+    .groupby(parcels_landuse.index)["Name"]
+    .nunique()
+)
+
+# Assign diversity score
+parcels_landuse["landuse_diversity"] = (
+    parcels_landuse.index.map(landuse_diversity)
+)
+
 # Defining Feature Matrix
 features = [
     "area",
@@ -89,61 +196,58 @@ features = [
     "dist_to_water",
     "dist_to_school",
     "dist_to_tourism",
-    "landuse_code"
+    "landuse_code",
+    "dist_to_major_road",
+    "landuse_diversity"
 ]
 
-# Prepare dataset
+
 data = parcels_landuse.dropna(
-    subset = features + ["target_code"]
+    subset= features + ["target_code"]
 )
 
 X = data[features]
 y = data["target_code"]
 
-X_train, X_test, y_train, y_test = train_test_split( 
-    X, 
-    y, 
-    test_size=0.30, 
-    random_state=42 
+X_train, X_test, y_train, y_test = train_test_split(
+    X,
+    y,
+    test_size=0.30,
+    random_state=42
 )
 
-model = RandomForestClassifier(
+# Random Forest
+rf_model = RandomForestClassifier(
     n_estimators=100,
     random_state=42
 )
 
-model.fit(X_train, y_train)
+rf_model.fit(X_train, y_train)
 
-# Generate predictions
-y_pred = model.predict(X_test)
+rf_pred = rf_model.predict(X_test)
 
-accuracy = accuracy_score(y_test, y_pred)
+rf_accuracy = accuracy_score(y_test, rf_pred)
 
-print("Accuracy:", accuracy)
+print("\nRandom Forest Accuracy:")
+print(rf_accuracy)
 
-data["predicted_class"] = model.predict(X)
-
-categories = ( 
-    data["ASS_CLASSI"] 
-    .astype("category") 
-    .cat.categories
-) 
-
-data["predicted_label"] = data["predicted_class"].apply( 
-    lambda code: categories[code] 
+# Gradient Boosting
+gb_model = GradientBoostingClassifier(
+    random_state=42
 )
 
-data["correct_prediction"] = (
-    data["ASS_CLASSI"] ==
-    data["predicted_label"]
-)
+gb_model.fit(X_train, y_train)
 
-print(data[["ASS_CLASSI", "predicted_label", "correct_prediction"]].head())
+gb_pred = gb_model.predict(X_test)
 
-error_agg = (
-    data.groupby("ASS_CLASSI")["correct_prediction"]
-    .value_counts()
-    .unstack(fill_value=0)
-)
+gb_accuracy = accuracy_score(y_test, gb_pred)
 
-print(error_agg)
+print("\nGradient Boosting Accuracy:")
+print(gb_accuracy)
+
+# Model Comparison
+
+print("\nModel Comparison")
+print("----------------")
+print(f"Random Forest Accuracy: {rf_accuracy:.4f}")
+print(f"Gradient Boosting Accuracy: {gb_accuracy:.4f}")
